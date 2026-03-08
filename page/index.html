@@ -430,7 +430,7 @@ def lcs(x, y):
 	n = len(x) ; m = len(y)
 	p = 0 ; l = 0
     mapEnds = build_map(y)
-    row = [Cell(upd=-2) for _ in range(m)]
+    row = [Cell(length=0,upd=-2) for _ in range(m)]
     for i in range(n):
         lstEnds = mapEnds.get(x[i],[])
         for j in reversed(lstEnds):
