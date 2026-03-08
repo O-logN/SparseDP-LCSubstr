@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Sparse Dynamic Programming for Longest Common Substring</title>
+
+<link rel="stylesheet"
+href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"
+onload="renderMathInElement(document.body);"></script>
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=JetBrains+Mono&display=swap" rel="stylesheet">
+
+<script defer
+src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"
+onload="renderMathInElement(document.body,{
+  delimiters: [
+    {left: '$$', right: '$$', display: true},
+    {left: '$', right: '$', display: false},
+    {left: '\\(', right: '\\)', display: false},
+    {left: '\\[', right: '\\]', display: true}
+  ]
+});"></script>
+
+<link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-okaidia.min.css" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script>
+
+<style>
+body {
+  font-family: "Inter", system-ui, sans-serif;
+  font-size: 18px;
+  line-height: 1.65;
+  color: #24292f;
+  margin: 2rem auto;
+  background: #ffffff;
+  width: 95%;
+  max-width: 1000px;
+}
+
+main {
+  max-width: 720px;
+  margin: auto;
+  padding: 40px 20px;
+}
+
+.title_high_margin {
+	margin-top: 2rem;
+}
+.title_low_margin {
+    margin-bottom: 0.3rem;
+}
+.title_low_margin + p {
+    margin-top: 0;
+}
+
+h1, h2, h3 {
+  font-weight: 650;
+}
+
+code, pre {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.9em;
+}
+
+pre {
+  background: #0d1117;
+  color: #e6edf3;
+  padding: 16px;
+  border-radius: 8px;
+  overflow-x: auto;
+}
+
+.katex-display {
+  margin: 1.4em 0;
+}
+
+.insight {
+  border-left: 4px solid #0969da;
+  background: #f6f8fa;
+  padding: 1px 16px;
+  margin-top: 10px;
+  margin-bottom: 10px;
+  border-radius: 6px;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+.insight details {
+  margin-top: 0px;
+}
+.insight summary {
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.insight-num {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 22px;
+	height: 22px;
+	border: 1px solid #555;
+	border-radius: 4px;
+	font-size: 12px;
+	font-weight: bold;
+	cursor: pointer;
+	user-select: none;
+	text-decoration: none;
+	color: inherit;
+}
+
+.insight-label {
+	pointer-events: none;
+	cursor: default;
+	transform: translateY(4px);
+}
+
+.insight-content {
+	flex: 1;
+}
+
+ul {
+	margin-top: 2px;
+}
+</style>
+</head>
+
+<body>
+
+<h2>Sparse Dynamic Programming for Longest Common Substring 
+  <img src="https://visitor-badge.laobi.icu/badge?page_id=O-logN.SparseDP-LCSubstr&title=Page+Views">
+</h2>
+
+<h3 class="title_low_margin title_high_margin">Introduction</h3>
+<p>
+On the internet, the longest common substring problem is frequently solved through a dynamic programming (DP) algorithm.
+Given two strings $x$ and $y$, of length $n$ and $m$ respectively, that algorithm requires $\Theta(nm)$ time.
+In this page, we derive it by starting from basic intuitions. Then, we turn it into a sparse DP solution.
+The trade-off: a slight increase in difficulty, in exchange of $\Theta(n+m+\#(x,y))$ time <sup>[1]</sup> and
+$\Theta(\min(n,m))$ space, where $\#(x,y)$ is the number of pairs $(i,j) \in \{1,\,\ldots,\,n\}\!\times\!
+\{1,\,\ldots,\,m\}$ such that $x[i]=y[j]$. Check the <a href="https://doi.org/10.5281/zenodo.18817204">preprint</a> for 
+two other improvements (hinted at the end of the page) and a more rigorous explanation.
+</p>
+
+<p> <small>[1] To be precise, $\Theta(n+m+\#(x,y))$ expected amortized time.<br>"Expected" due
+to hash map lookups/insertions, "amortized" due to array appends.</small> </p>
+
+<h3 class="title_low_margin title_high_margin">Contact</h3>
+<p>
+Email:
+<script>
+  const a = "seppe";
+  const b = "gmai";
+  const s = a + "tac" + "@" + b + "l.com";
+  document.write('<a href="mailto:' + s + '">' + s + '</a>');
+</script>
+<noscript>Enable JS to see the address.</noscript>
+</p>
+
+
+
+<h3 class="title_low_margin title_high_margin">Basic Notations</h3>
+<p>
+Some basic math notations enable a smoother explanation (so, bear with it).
+</p>
+<p>
+We denote by $\varepsilon$ the empty string. Let $u$ be a string. We denote by $|u|$ its length.
+For all $i \in \{1,\,\ldots,\,|u|\}$, we denote by $u[i]$ the symbol at position $i$.
+For all $i,j \in \{1,\,\ldots,\,|u|\}$, with $i\leq j$, we denote by $u[i \,.\,.\, j]$
+the string $u[i]*u[i\!+\!1]* \ldots * u[j]$ (the asterisk denotes the concatenation operator). Let $s$ be a string such that $|s| \leq |u|$. For all $i \in
+\{|s|,\,\ldots,\,|u|\}$, we say that $s$ ends at position $i$ of $u$ iff $u[i\!-\!|s|\!+\!1 \,.\,.\, i] = s$.
+We say that $s$ is a substring of $u$ iff it ends at some position $i \in \{|s|,\,\ldots,\,|u|\}$ of $u$.
+</p>
+<p>
+From now on, let $x$ and $y$ be two strings, and let $n:=|x|$ and $m:=|y|$.
+We say that $u$ is a <i>common substring</i> of
+$x$ and $y$ iff $u$ is a substring of $x$ and a substring of $y$. We denote by $\mathrm{CS}$ the set of common
+substrings of $x$ and $y$. We say that $u$ is a <i>longest common substring</i> of $x$ and $y$ iff $u \in
+\mathrm{CS}$ and $|u| \geq |s|$ for all $s \in \mathrm{CS}$. We denote by $\mathrm{LCS}$ the set of
+longest common substrings of $x$ and $y$. Let $(i,j) \in \{1,\,\ldots,\,n\} \! \times \! \{1,\,\ldots,\,m\}$.
+We define $\mathrm{CS}(i,j)$ as the set of common substrings of $x$ and $y$ ending,
+respectively, at positions $i$ and $j$. That is, $\mathrm{CS}(i,j) := \{s \in \mathrm{CS}(x,y)
+\,:\, s=x[i\!-\!|s|\!+\!1 \,.\,.\, i] \, \land \, s=y[j\!-\!|s|\!+\!1 \,.\,.\, j]\}$. We define $\mathrm{lcs}(i,j)$
+as the longest element of $\mathrm{CS}(i,j)$. Let $i \in \{1,\,\ldots,\,n\}$. We define $\mathrm{CS}(i)$ as the set of
+common substrings of $x$ and $y$ ending at position $i$ of $x$.
+</p>
+
+<h3 class="title_low_margin title_high_margin">Indexing</h3>
+<p>
+For maths/presentation, we use $1$-based indexing. In code, we use $0$-based indexing.
+</p>
+
+<h3 class="title_low_margin title_high_margin">Longest Common Substring problem</h3>
+<p>
+Given $x$ and $y$, return an element of $\mathrm{LCS}$.
+</p>
+
+
+<h3 class="title_low_margin title_high_margin">Brute Force</h3>
+The following observation allows us to identify a search space.
+<div class="insight" id="insight-1">
+	<a href="#insight-1" class="insight-num insight-label">1</a>
+	<div class="insight-content">
+		For each $s \in \mathrm{LCS}$, there exists a pair $(i,j) \in I$ such that $\mathrm{lcs}(i,j) = s$.
+		<details>
+		<summary>Proof</summary>
+			Let $s \in \mathrm{LCS}$. Since $s \in \mathrm{CS}$, it ends at some position $i \in \{1,\,\ldots,\,n\}$
+			of $x$ and at some position $j \in \{1,\,\ldots,\,m\}$ of $y$. That is, there exists $(i,j) \in I$ such that
+			$s \in \mathrm{CS}(i,j)$. Since $s \in \mathrm{LCS}$, we have $|s| \geq |u|$ for all $u \in
+			\mathrm{CS}(i,j)$. Therefore, $s = \mathrm{lcs}(i,j)$.
+		</details>
+	</div>
+</div>
+So, $\mathrm{LCS} \subseteq \{\mathrm{lcs}(i,j) \, : \, (i,j) \in I\}$. Let $(i,j) \in I$.
+How do we know whether $\mathrm{lcs}(i,j) \in \mathrm{LCS}$ ?
+<div class="insight" id="insight-2">
+	<a href="#insight-2" class="insight-num insight-label">2</a>
+	<div class="insight-content">
+		If $|\mathrm{lcs}(i,j)| \geq |\mathrm{lcs}(i',j')|$ for all $(i',j') \in I$,
+		then $\mathrm{lcs}(i,j) \in \mathrm{LCS}$.
+		<details>
+		<summary>Proof</summary>
+			For all $(i',j') \in I$, if $|\mathrm{lcs}(i,j)| \geq |\mathrm{lcs}(i',j')|$,
+			then $|\mathrm{lcs}(i,j)| \geq \max \{|s| : s \in \mathrm{CS}(i',j')\}$. <br> Given that $\mathrm{CS} =
+			\cup_{(i',j') \in I}{\mathrm{CS}(i',j')}$, we conclude $\mathrm{lcs}(i,j) \in \mathrm{LCS}$.
+		</details>
+	</div>
+</div>
+How we compute $\mathrm{lcs}(i,j)$ ?
+<div class="insight" id="insight-3">
+	<a href="#insight-3" class="insight-num insight-label">3</a>
+	<div class="insight-content">
+		If $x[i] \neq y[j]$, then $\mathrm{lcs}(i,j) = \varepsilon$. Suppose that $x[i] = y[j]$.
+		If $i = 1 \,\lor\, j = 1$, then $\mathrm{lcs}(i,j) = x[i]$. <br> Otherwise, $\mathrm{lcs}(i,j) =
+		\mathrm{lcs}(i\!-\!1,j\!-\!1) * x[i]$.
+		<details>
+		<summary>Proof</summary>
+			Suppose that $i > 1 \,\land\, j > 1 \,\land\, x[i]=y[j]$, otherwise it is trivial. Let $\ell :=
+			|\mathrm{lcs}(i,j)|$. We have $\ell \geq 1$ and $\mathrm{lcs}(i,j) = x[i\!-\!\ell\!+\!1 \,.\,.\, i]
+			= y[j\!-\!\ell\!+\!1 \,.\,.\, j]$. Now note: if $i\!-\!\ell \geq 1\, \land \,j\!-\!\ell \geq 1$, then $x[i\!-\!\ell]\neq
+			y[j\!-\!\ell]$.<br>In fact: if it were $x[i\!-\!\ell]=y[j\!-\!\ell]$, then the maximality of $\mathrm{lcs}(i,j)$
+			would be contradicted.<br>We distinguish two cases:
+			<ul>
+				<li>Suppose $\ell=1$. Since $i > 1 \,\land\, j > 1$, we have $i\!-\!\ell \geq 1 \,\land\, j\!-\!\ell \geq 1$. So,
+				$\mathrm{lcs}(i\!-\!1,j\!-\!1) = \varepsilon$ and $\mathrm{lcs}(i,j) = x[i]$. Consequently,
+				$\mathrm{lcs}(i,j) = \mathrm{lcs}(i\!-\!1,j\!-\!1) * x[i]$ holds.</li>
+				<li>Suppose $\ell > 1$. Regardless of whether $i\!-\!\ell \geq 1 \,\land\, j\!-\!\ell \geq 1$ is true or not,
+				we have
+				$\mathrm{lcs}(i\!-\!1,j\!-\!1) = x[i\!-\!\ell\!+\!1 \,.\,.\, i\!-\!1]$. Since $\mathrm{lcs}(i,j) =
+				x[i\!-\!\ell\!+\!1 \,.\,.\, i] = x[i\!-\!\ell\!+\!1 \,.\,.\, i\!-\!1] * x[i]$, we conclude that
+				$\mathrm{lcs}(i,j) = \mathrm{lcs}(i\!-\!1,j\!-\!1) * x[i]$ holds.
+				</li>
+			</ul>
+		</details>
+	</div>
+</div>
+This yields the following algorithm:
+<pre><code class="language-python">def lcs_ij(x, y, i, j):
+	if x[i] != y[j]: return ""
+	if i == 0 or j == 0: return x[i]
+	return lcs_ij(x, y, i-1, j-1) + x[i]
+
+def lcs(x, y):
+	n = len(x)
+	m = len(y)
+	ans = ""
+	for i in range(n):
+		for j in range(m):
+			cur = lcs_ij(x, y, i, j)
+			if len(cur) > len(ans):
+				ans = cur
+	return ans
+</code></pre>
+It requires $O(n \cdot m \cdot \min(n,m))$ time and $O(\min(n,m))$ space. We can reduce the latter to $O(1)$.
+It is sufficient to adapt <a href="#insight-3" class="insight-num">3</a> for computing $|\mathrm{lcs}(i,j)|$,
+and to observe:
+<div class="insight" id="insight-4">
+	<a href="#insight-4" class="insight-num insight-label">4</a>
+	<div class="insight-content">
+		Let $(p,q) \in I$ and $\ell := |\mathrm{lcs}(p,q)|$. Suppose that $\ell \geq |\mathrm{lcs}(i,j)|$
+		for all $(i,j) \in I$. By <a href="#insight-2" class="insight-num">2</a>, we have $\mathrm{lcs}(p,q)
+		\in \mathrm{LCS}$. The sequence $\mathrm{lcs}(p,q)$ ends at position $p$ of $x$ and has length $\ell$,
+		so $x[p\!-\!\ell\!+\!1 \,.\,.\, p] \in \mathrm{LCS}$.
+	</div>
+</div>
+The above algorithm becomes:
+<pre><code class="language-python">def len_lcs_ij(x, y, i, j):
+	if x[i] != y[j]: return 0
+	if i == 0 or j == 0: return 1
+	return len_lcs_ij(x, y, i-1, j-1) + 1
+
+def lcs(x, y):
+	n = len(x)
+	m = len(y)
+	(p,q) = (0,0)
+	l = 0
+	for i in range(n):
+		for j in range(m):
+			cur_l = len_lcs_ij(x, y, i, j)
+			if cur_l > l:
+				(p,q) = (i,j)
+				l = cur_l
+	return x[p-l+1 : p+1] if l > 0 else ""
+</code></pre>
+For clarity, we stored the entire pair $(p,q)$ instead of just $p$. Later, we will drop the second coordinate.
+
+
+<h3 class="title_low_margin title_high_margin">Dynamic Programming</h3>
+Without loss of generality, suppose $n \geq m$ (for the rest of the page). At the expense of $\Theta(m)$ space,
+the time complexity can be reduced to $\Theta(nm)$. Observe:
+<div class="insight" id="insight-5">
+	<a href="#insight-5" class="insight-num insight-label">5</a>
+	<div class="insight-content">
+		Let $(i,j) \in I$ with $i > 1 \, \land \, j > 1$. Our approach involves computing both
+		$|\mathrm{lcs}(i\!-\!1,j\!-\!1)|$
+		and $|\mathrm{lcs}(i,j)|$. However, if $x[i] = y[j]$, then the latter depends on the former (recall
+		<a href="#insight-3" class="insight-num">3</a>). Thus, if we compute and store
+		$|\mathrm{lcs}(i\!-\!1,j\!-\!1)|$ before
+		$|\mathrm{lcs}(i,j)|$, then the latter can be obtained in constant time, avoiding redundant calculations.
+	</div>
+</div>
+In short, <a href="#insight-3" class="insight-num">3</a> uncovers dynamic programming as a natural framework to improve
+the time complexity. To employ <a href="#insight-5" class="insight-num">5</a>, we introduce an auxiliary array
+$\mathsf{row}$ of length $m$. Then, we iterate over $I$ as follows: for each $i \in \{1,\,\ldots,\,n\}$,
+traverse the indices $j \in \{1,\,\ldots,\,m\}$ in reverse order. In fact, suppose that the algorithm has just begun the
+$i$-th iteration of its outer loop, with $i > 1$. Thus, suppose that for all $j \in \{1,\,\ldots,\,m\}$ we have
+$\mathsf{row}[j] = |\mathrm{lcs}(i\!-\!1,j)|$. When the algorithm considers an element $j \in \{2,\,\ldots,\,m\}$,
+it has $|\mathrm{lcs}(i\!-\!1,j\!-\!1)|$ stored in $\mathsf{row}[j\!-\!1] $. Consequently, it can compute and assign
+$|\mathrm{lcs}(i,j)|$ to $\mathsf{row}[j]$ in $O(1)$ time. This yields the following algorithm:
+<pre><code class="language-python">def lcs(x, y):
+	if len(y) > len(x): x,y = y,x
+	n = len(x) ; m = len(y)
+	p = 0 ; l = 0
+	row = [0 for _ in range(m)]
+	for i in range(n):
+		for j in range(m-1, -1, -1):
+			if x[i] == y[j]:
+				row[j] = row[j-1]+1 if j > 0 else 1
+			else:
+				row[j] = 0
+			if row[j] > l:
+				p = i
+				l = row[j]
+	return x[p-l+1 : p+1] if l > 0 else ""
+</code></pre>
+To be fair, this is not <i>exactly</i> the usual DP algorithm. Here, we use a single support array (not a table, not two
+arrays), and we iterate through $\{1,\,\ldots,\,m\}$ in reverse order (i had to say it).
+
+<h3 class="title_low_margin title_high_margin">Sparse Dynamic Programming</h3>
+We now reduce the time complexity to $\Theta(n + m + \#(x,y))$, albeit in expected and amortized terms,
+while still requiring $\Theta(m)$ space. Recall that $\#(x,y)$ is the number of pairs $(i,j) \in I$ such that $x[i]=y[j]$.
+<br>The following observation exposes a key inefficiency of the dynamic programming algorithm:
+<div class="insight" id="insight-6">
+	<a href="#insight-6" class="insight-num insight-label">6</a>
+	<div class="insight-content">
+		Let $i \in \{1,\,\ldots,\,n\}$. At the start of the $i$-th iteration of the outer-loop, the variable $l$
+		contains a value not smaller than $0$. Thus, for each $j \in \{1,\,\ldots,\,m\}$ such that $|\mathrm{lcs}(i,j)|
+		= 0$, the control $\mathsf{row}[j] > l$ is guaranteed to fail.
+	</div>
+</div>
+That is, each pair $(i,j) \in I$ such that $x[i] \neq y[j]$ is irrelevant to improving the current best solution.
+However, due to the decomposition outlined in <a href="#insight-3" class="insight-num">3</a>, it might be useful
+to know whether $(i,j)$ is such that $|\mathrm{lcs}(i,j)| = 0$. In order to (implicitly) store this information,
+we augment $\mathsf{row}$:
+<div class="insight" id="insight-7">
+	<a href="#insight-7" class="insight-num insight-label">7</a>
+	<div class="insight-content">
+	We modify each element of $\mathsf{row}$
+	to contain two fields: $\mathsf{len}$ and $\mathsf{upd}$. During the initialization phase, we set to $-1$ the
+	$\mathsf{upd}$ field of each element. Then, for each $(i,j) \in I$, we manipulate $\mathsf{row}[j]$ as follows.
+	If $x[i] \neq y[j]$, then we do not alter $\mathsf{row}[j]$. Otherwise, we assign $|\mathrm{lcs}(i,j)|$ to
+	$\mathsf{row}[j]\mathsf{.len}$, and $i$ to $\mathsf{row}[j]\mathsf{.upd}$.
+		<details>
+		<summary>Why it works ?</summary>
+		Let $(i,j) \in I$ be such that $x[i] = y[j]$. We can still compute $|\mathrm{lcs}(i,j)|$ in $O(1)$ time.
+		In fact, suppose that $i>1 \,\land\, j>1$ (otherwise, it is trivial), and recall the specified iteration order.
+		It suffices to check the value contained in $\mathsf{row}[j\!-\!1]\mathsf{.upd}$. We have two cases:
+		<ul>
+			<li>Suppose $\mathsf{row}[j\!-\!1]\mathsf{.upd} \neq i\!-\!1$. Then, $x[i\!-\!1] = y[j\!-\!1]$ cannot be true.
+			Thus, we have $|\mathrm{lcs}(i\!-\!1,j\!-\!1)| = 0$.
+			</li>
+			<li>Suppose $\mathsf{row}[j\!-\!1]\mathsf{.upd} = i\!-\!1$. By contradiction, suppose that
+			$x[i\!-\!1] \neq y[j\!-\!1]$ holds. When processing the pair $(i\!-\!1,j\!-\!1)$, the algorithm cannot
+			have modified
+			$\mathsf{row}[j\!-\!1]$. If no prior outer-loop iteration had modified $\mathsf{row}[j\!-\!1].\mathsf{upd}$,
+			then now it would contain $-1$ (due to the initialization phase). This cannot have happened, since $i\!-\!1$ is
+			at least $0$. Suppose that there existed an outer-loop iteration during which
+			$\mathsf{row}[j\!-\!1].\mathsf{upd}$ had been modified. Let $i'$ identify the latest of those iterations.
+			Currently, $\mathsf{row}[j\!-\!1].\mathsf{upd}$ would contain $i'$. However, $i'$ necessarily belongs to
+			$\{1,\,\ldots,\,i-2\}$. Thus, $\mathsf{row}[j\!-\!1]\mathsf{.upd} = i\!-\!1$ would be contradicted. Consequently,
+			$x[i\!-\!1] \neq y[j\!-\!1]$ must be false. This implies that $\mathsf{row}[j\!-\!1]\mathsf{.len}$ contains
+			$|\mathrm{lcs}(i\!-\!1,j\!-\!1)|$.
+			</li>
+		</ul>
+		</details>
+	</div>
+</div>
+To complete our algorithm, we need a means to iterate only over the pairs $(i,j) \in I$ such that $x[i] = y[j]$.
+<br>For this reason:
+<div class="insight" id="insight-8">
+	<a href="#insight-8" class="insight-num insight-label">8</a>
+	<div class="insight-content">
+	During the initialization phase, we construct a hash map mapping each symbol $\sigma$ of $y$
+	to the strictly increasing ordering of $\{j \in \{1,\,\ldots,\,m\} : y[j]=\sigma \}$.
+	</div>
+</div>
+The hash map can be constructed in $\Theta(m)$ expected amortized time, while requiring $\Theta(m)$ space.
+Moreover, it might be replaceable by an array. We finally obtain our sparse DP algorithm (we renamed $\mathsf{len}$
+with $\mathsf{length}$):
+<pre><code class="language-python">from dataclasses import dataclass
+
+@dataclass
+class Cell:
+    length: int
+    upd: int
+
+def build_map(s):
+    d = dict()
+    for i,c in enumerate(s):
+        if c not in d: d[c] = []
+        d[c].append(i)
+    return d
+
+def lcs(x, y):
+	if len(y) > len(x): x,y = y,x
+	n = len(x) ; m = len(y)
+	p = 0 ; l = 0
+    mapEnds = build_map(y)
+    row = [Cell(upd=-2) for _ in range(m)]
+    for i in range(n):
+        lstEnds = mapEnds.get(x[i],[])
+        for j in reversed(lstEnds):
+            row[j].upd = i
+            if j-1 >= 0 and row[j-1].upd == i-1:
+                row[j].length = row[j-1].length+1
+            else:
+                row[j].length = 1
+            if row[j].length > l:
+                l = row[j].length
+                p = i
+    return x[p-l+1 : p+1] if l > 0 else ""
+</code></pre>
+
+<h3 class="title_low_margin title_high_margin">Even Further Beyond (!)</h3>
+<p>
+Let $k \in \{1,\,\ldots,\,\min(n,m)\}$. As an attempt to "increase sparsity",
+we can run our algorithm on the sequences $x^{(k)} := (x[1 \,.\,.\, k],\, x[2 \,.\,.\, k\!+\!1],\, \ldots,\,
+x[n\!-\!k\!+\!1 \,.\,.\, n])$
+and $y^{(k)} := (y[1 \,.\,.\, k],\, y[2 \,.\,.\, k\!+\!1],\, \ldots,\, y[m\!-\!k\!+\!1 \,.\,.\, m])$.<br>
+This optimization requires almost no modification to the code, and is discussed in detail in the
+<a href="https://doi.org/10.5281/zenodo.18817204">preprint</a>.
+</p>
+<p>
+If there exists $s \in \mathrm{CS}$ such that $|s| \geq k$, then the time complexity becomes
+$\Theta(k(n+m-k) + \#(x^{(k)},y^{(k)}))$, while the space complexity becomes $\Theta(k(n+m-k))$.
+In this case, bit-packing (if feasible) allows to further reduce complexities: they become
+$\Theta(n+m-k + \#(x^{(k)},y^{(k)}))$ and $\Theta(n+m-k)$, respectively. Both time complexities are still
+expressed in expected and amortized terms.
+</p>
+<p>
+Otherwise, if no suitable $s \in \mathrm{CS}$ exists, then our sparse DP
+won't find a solution. So, we will need to search one by considering the interval of lengths $[0,k\!-\!1]$. To this end,
+we can use linear search (or something better).
+</p>
+</body>
+</html>
