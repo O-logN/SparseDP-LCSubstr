@@ -9,7 +9,6 @@ from sparse_dp_k import sparse_dp_k
 from collections import Counter
 from math import log, ceil
 
-
 def generate_string(length):
     alphabet = ['A', 'C', 'G', 'T']
     res_list = random.choices(alphabet, weights=[0.1, 0.65, 0.2, 0.05], k=length) # a not too favorable distribution
@@ -75,6 +74,3 @@ if __name__ == "__main__":
     with open(file_path,mode='w',encoding="utf-8") as file:
         for a, b, c in zip(lengths, tree_times, sparse_dp_k_times):
             file.write(f"{a} {b} {c}\n")
-
-
-
