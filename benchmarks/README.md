@@ -1,4 +1,5 @@
 Check the preprint for a theoretical discussion on the i.i.d. model.\
+\
 Here is a *very* minimal benchmark (for what it is worth).\
 I ran `/main/sparse_dp_k.py` with `k` such that `k in Theta(log(nm))`, and compared it against a suffix tree implementation\
 (credits to https://github.com/cceh/suffix-tree). \
