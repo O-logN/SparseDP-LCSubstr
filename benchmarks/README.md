@@ -1,1 +1,1 @@
-A *very* minimal benchmark.
+A *very* minimal benchmark, for what it is worth.
