@@ -33,10 +33,10 @@ onload="renderMathInElement(document.body,{
 body {
   font-family: "Inter", system-ui, sans-serif;
   font-size: 18px;
-  line-height: 1.65;
+  line-height: 1.7;
   color: #24292f;
   margin: 2rem auto;
-  background: #ffffff;
+  background: rgb(240,240,240);
   width: 95%;
   max-width: 1000px;
 }
@@ -80,7 +80,7 @@ pre {
 
 .insight {
   border-left: 4px solid #0969da;
-  background: #f6f8fa;
+  background: rgba(215, 225, 255, 0.6);
   padding: 1px 16px;
   margin-top: 10px;
   margin-bottom: 10px;
@@ -88,6 +88,8 @@ pre {
   display: flex;
   align-items: flex-start;
   gap: 10px;
+  font-family: "Charter", "Spectral", Georgia, serif;
+  font-size: 19px;
 }
 .insight details {
   margin-top: 0px;
@@ -105,7 +107,7 @@ pre {
 	height: 22px;
 	border: 1px solid #555;
 	border-radius: 4px;
-	font-size: 12px;
+	font-size: 15px;
 	font-weight: bold;
 	cursor: pointer;
 	user-select: none;
@@ -117,6 +119,7 @@ pre {
 	pointer-events: none;
 	cursor: default;
 	transform: translateY(4px);
+	font-family: "Inter", system-ui, sans-serif;
 }
 
 .insight-content {
@@ -125,6 +128,20 @@ pre {
 
 ul {
 	margin-top: 2px;
+}
+ol {
+	margin-top: -7px;
+	margin-bottom: 7px;
+}
+.s3 {
+	margin: 0;
+	padding: 0;
+	padding-left: 0.5em;
+}
+.s2 {
+	margin: 0;
+	padding: 0;
+	padding-left: 0.2em;
 }
 </style>
 </head>
@@ -135,17 +152,25 @@ ul {
   <img src="https://visitor-badge.laobi.icu/badge?page_id=O-logN.SparseDP-LCSubstr&title=Page+Views">
 </h2>
 
+<h3 class="title_low_margin title_high_margin">Premise</h3>
+This is NOT the longest common subsequence problem. Sometimes, people confuse the two.
+
 <h3 class="title_low_margin title_high_margin">Introduction</h3>
 <p>
-On the internet, the longest common substring problem is frequently solved through a dynamic programming (DP) algorithm.
-Given two strings $x$ and $y$, of length $n$ and $m$ respectively, that algorithm requires $\Theta(nm)$ time.
-In this page, we derive it by starting from basic intuitions. Then, we turn it into a sparse DP solution.
-The trade-off: a slight increase in difficulty, in exchange of $\Theta(n+m+\#(x,y))$ time <sup>[1]</sup> and
-$\Theta(\min(n,m))$ space, where $\#(x,y)$ is the number of pairs $(i,j) \in \{1,\,\ldots,\,n\}\!\times\!
-\{1,\,\ldots,\,m\}$ such that $x[i]=y[j]$. Check the <a href="https://doi.org/10.5281/zenodo.18817204">preprint</a> for 
-two other improvements (hinted at the end of the page) and a more rigorous explanation. Github repo
-<a href="https://github.com/O-logN/SparseDP-LCSubstr/">here</a>.
-</p>
+Let $x$ and $y$ be two strings, of length $n$ and $m$ respectively.<span class="s2"></span> Let $\#(x,y)$ be the number
+of pairs <span class="s2"></span>
+$(i,j) \in \{1,\,\ldots,\,n\}\!\times\!\{1,\,\ldots,\,m\}$ <span class="s2"></span> such that<span class="s2"></span> $x[i]=y[j]$.
+<span class="s2"></span> In this page, i present a sparse Dynamic Programming (DP) algorithm requiring $\Theta(n+m+\#(x,y))$ time <sup>[1]</sup>
+and $\Theta(\min(n,m))$ space. The exposition has two goals: being of didactic utility, and proving that this algorithm is conceptually simple.
+About the former: starting from fundamental intuitions, i obtain a brute force algorithm. I improve it, and then I further 
+enhance it through DP. This yields a $\Theta(nm)$ algorithm that appears frequently on the internet. Then, i turn it into my
+sparse DP algorithm. At the end of the page, I mention how to further improve its time complexity (two tricks that don't ruin
+its simplicity). A complete explanation is available in my <a href="https://doi.org/10.5281/zenodo.18817204">preprint</a>.
+<br> <div style="margin:0; padding:0; padding-bottom: 9px;"></div>
+In the <a href="https://github.com/O-logN/SparseDP-LCSubstr/">github repo</a>, you can
+find python code and a very limited benchmark against a suffix tree. While that result is encouraging, I lack the domain
+knowledge to conduct meaningful benchmarks in relevant scenarios. So, contributions would be welcome.
+</p> 
 
 <p> <small>[1] To be precise, $\Theta(n+m+\#(x,y))$ expected amortized time.<br>"Expected" due
 to hash map lookups/insertions, "amortized" due to array appends.</small> </p>
@@ -169,24 +194,26 @@ Email:
 Some basic math notations enable a smoother explanation (so, bear with it).
 </p>
 <p>
-We denote by $\varepsilon$ the empty string. Let $u$ be a string. We denote by $|u|$ its length.
-For all $i \in \{1,\,\ldots,\,|u|\}$, we denote by $u[i]$ the symbol at position $i$.
+We denote by $\varepsilon$ the empty string.<span class="s2"></span> Let $u$ be a string. <span class="s2"></span>We denote by $|u|$ its length.
+<span class="s2"></span> For all $i \in \{1,\,\ldots,\,|u|\}$, we denote by $u[i]$ the symbol at position $i$.<span class="s2"></span>
 For all $i,j \in \{1,\,\ldots,\,|u|\}$, with $i\leq j$, we denote by $u[i \,.\,.\, j]$
-the string $u[i]*u[i\!+\!1]* \ldots * u[j]$ (the asterisk denotes the concatenation operator). Let $s$ be a string such that $|s| \leq |u|$. For all $i \in
-\{|s|,\,\ldots,\,|u|\}$, we say that $s$ ends at position $i$ of $u$ iff $u[i\!-\!|s|\!+\!1 \,.\,.\, i] = s$.
+the string $u[i]*u[i\!+\!1]* \ldots * u[j]$ (the asterisk denotes the concatenation operator).<span class="s2"></span> Let $s$ be a string such that $|s| \leq |u|$.
+<span class="s2"></span>For all $i \in
+\{|s|,\,\ldots,\,|u|\}$, we say that $s$ ends at position $i$ of $u$ iff $u[i\!-\!|s|\!+\!1 \,.\,.\, i] = s$.<span class="s2"></span>
 We say that $s$ is a substring of $u$ iff it ends at some position $i \in \{|s|,\,\ldots,\,|u|\}$ of $u$.
 </p>
 <p>
-From now on, let $x$ and $y$ be two strings, and let $n:=|x|$ and $m:=|y|$.
+From now on, let $x$ and $y$ be two strings, and let $n:=|x|$ and $m:=|y|$.<span class="s2"></span>
 We say that $u$ is a <i>common substring</i> of
-$x$ and $y$ iff $u$ is a substring of $x$ and a substring of $y$. We denote by $\mathrm{CS}$ the set of common
-substrings of $x$ and $y$. We say that $u$ is a <i>longest common substring</i> of $x$ and $y$ iff $u \in
-\mathrm{CS}$ and $|u| \geq |s|$ for all $s \in \mathrm{CS}$. We denote by $\mathrm{LCS}$ the set of
-longest common substrings of $x$ and $y$. Let $(i,j) \in \{1,\,\ldots,\,n\} \! \times \! \{1,\,\ldots,\,m\}$.
-We define $\mathrm{CS}(i,j)$ as the set of common substrings of $x$ and $y$ ending,
-respectively, at positions $i$ and $j$. That is, $\mathrm{CS}(i,j) := \{s \in \mathrm{CS}(x,y)
-\,:\, s=x[i\!-\!|s|\!+\!1 \,.\,.\, i] \, \land \, s=y[j\!-\!|s|\!+\!1 \,.\,.\, j]\}$. We define $\mathrm{lcs}(i,j)$
-as the longest element of $\mathrm{CS}(i,j)$. Let $i \in \{1,\,\ldots,\,n\}$. We define $\mathrm{CS}(i)$ as the set of
+$x$ and $y$ iff $u$ is a substring of $x$ and a substring of $y$.<span class="s2"></span> We denote by $\mathrm{CS}$ the set of common
+substrings of $x$ and $y$.<span class="s2"></span> We say that $u$ is a <i>longest common substring</i> of $x$ and $y$ iff $u \in
+\mathrm{CS}$ and $|u| \geq |s|$ for all $s \in \mathrm{CS}$.<span class="s2"></span> We denote by $\mathrm{LCS}$ the set of
+longest common substrings of $x$ and $y$.<span class="s2"></span> Let $(i,j) \in \{1,\,\ldots,\,n\} \! \times \! \{1,\,\ldots,\,m\}$.
+<span class="s2"></span>We define $\mathrm{CS}(i,j)$ as the set of common substrings of $x$ and $y$ ending,
+respectively, at positions $i$ and $j$.<span class="s2"></span> That is:
+$$\mathrm{CS}(i,j) \quad := \quad \{s \in \mathrm{CS}(x,y) \,:\, s=x[i\!-\!|s|\!+\!1 \,.\,.\, i] \, \land \, s=y[j\!-\!|s|\!+\!1 \,.\,.\, j]\}$$
+We define $\mathrm{lcs}(i,j)$
+as the longest element of $\mathrm{CS}(i,j)$. <span class="s2"></span>Let $i \in \{1,\,\ldots,\,n\}$. <span class="s2"></span>We define $\mathrm{CS}(i)$ as the set of
 common substrings of $x$ and $y$ ending at position $i$ of $x$.
 </p>
 
@@ -209,57 +236,74 @@ The following observation allows us to identify a search space.
 		For each $s \in \mathrm{LCS}$, there exists a pair $(i,j) \in I$ such that $\mathrm{lcs}(i,j) = s$.
 		<details>
 		<summary>Proof</summary>
-			Let $s \in \mathrm{LCS}$. Since $s \in \mathrm{CS}$, it ends at some position $i \in \{1,\,\ldots,\,n\}$
-			of $x$ and at some position $j \in \{1,\,\ldots,\,m\}$ of $y$. That is, there exists $(i,j) \in I$ such that
-			$s \in \mathrm{CS}(i,j)$. Since $s \in \mathrm{LCS}$, we have $|s| \geq |u|$ for all $u \in
-			\mathrm{CS}(i,j)$. Therefore, $s = \mathrm{lcs}(i,j)$.
+			Let $s \in \mathrm{LCS}$ .<span class="s3"></span>Since $s \in \mathrm{CS}$,<span class="s2"></span> it ends
+			at some position<span class="s2"></span> $i \in \{1,\,\ldots,\,n\}$<span class="s2"></span>
+			of<span class="s2"></span> $x$ <span class="s2"></span>and at some position<span class="s2"></span> $j \in \{1,\,\ldots,\,m\}$ <span class="s2"></span>of<span class="s2"></span> $y$ .<span class="s3"></span>That is,
+			<span class="s2"></span>there exists $(i,j) \in I$ such that <span class="s2"></span>$s \in \mathrm{CS}(i,j)$ .<span class="s3"></span>Since
+			$s \in \mathrm{LCS}$, we have<span class="s2"></span> $|s| \geq |u|$ <span class="s2"></span>for all<span class="s2"></span> $u \in
+			\mathrm{CS}(i,j)$ .<span class="s3"></span>Therefore, <span class="s2"></span>$s = \mathrm{lcs}(i,j)$.
 		</details>
 	</div>
 </div>
-So, $\mathrm{LCS} \subseteq \{\mathrm{lcs}(i,j) \, : \, (i,j) \in I\}$. Let $(i,j) \in I$.
-How do we know whether $\mathrm{lcs}(i,j) \in \mathrm{LCS}$ ?
+So, $\mathrm{LCS} \,\subseteq\, \{\mathrm{lcs}(i,j) : (i,j) \in I\}$. <span class="s3"></span>Let $(i,j) \in I$.<span class="s3"></span> How do we know
+whether $\mathrm{lcs}(i,j) \in \mathrm{LCS}$ ?
 <div class="insight" id="insight-2">
 	<a href="#insight-2" class="insight-num insight-label">2</a>
 	<div class="insight-content">
-		If $|\mathrm{lcs}(i,j)| \geq |\mathrm{lcs}(i',j')|$ for all $(i',j') \in I$,
-		then $\mathrm{lcs}(i,j) \in \mathrm{LCS}$.
+		If<span class="s2"></span> $|\mathrm{lcs}(i,j)| \geq |\mathrm{lcs}(i',j')|$<span class="s2"></span> for all $(i',j') \in I$, 
+		<span class="s2"></span>
+		then $\mathrm{lcs}(i,j) \in \mathrm{LCS}$ .
 		<details>
 		<summary>Proof</summary>
-			For all $(i',j') \in I$, if $|\mathrm{lcs}(i,j)| \geq |\mathrm{lcs}(i',j')|$,
-			then $|\mathrm{lcs}(i,j)| \geq \max \{|s| : s \in \mathrm{CS}(i',j')\}$. <br> Given that $\mathrm{CS} =
-			\cup_{(i',j') \in I}{\mathrm{CS}(i',j')}$, we conclude $\mathrm{lcs}(i,j) \in \mathrm{LCS}$.
+			Suppose that<span class="s2"></span> $|\mathrm{lcs}(i,j)| \geq |\mathrm{lcs}(i',j')|$<span class="s2"></span> for all <span class="s2"></span>$(i',j') \in I$
+			.<span class="s3"></span>By definition of <span class="s2"></span>$\mathrm{lcs}(i',j')$:
+			$$\forall (i',j') \in I \quad \quad
+			|\mathrm{lcs}(i,j)| \,\, \geq \,\, \max \{|s| : s \in \mathrm{CS}(i',j')$$Noting that:
+			$$\bigcup_{(i',j') \in I}{\mathrm{CS}(i',j')} \quad = \quad \mathrm{CS}$$
+			we establish that<span class="s2"></span> $|\mathrm{lcs}(i,j)| \geq \max \{|s| : s \in \mathrm{CS}(i,j)\}$.<span class="s3"></span>So,<span class="s2"> $\mathrm{lcs}(i,j)
+			\in \mathrm{LCS}$ .
 		</details>
 	</div>
 </div>
-How we compute $\mathrm{lcs}(i,j)$ ?
+How do we compute $\mathrm{lcs}(i,j)$ ?
 <div class="insight" id="insight-3">
 	<a href="#insight-3" class="insight-num insight-label">3</a>
 	<div class="insight-content">
-		If $x[i] \neq y[j]$, then $\mathrm{lcs}(i,j) = \varepsilon$. Suppose that $x[i] = y[j]$.
-		If $i = 1 \,\lor\, j = 1$, then $\mathrm{lcs}(i,j) = x[i]$. <br> Otherwise, $\mathrm{lcs}(i,j) =
-		\mathrm{lcs}(i\!-\!1,j\!-\!1) * x[i]$.
+		If <span class="s2"></span>$x[i] \neq y[j]$, <span class="s2"></span> then
+		<span class="s2"></span> $\mathrm{lcs}(i,j) = \varepsilon$ .<span class="s3"></span> Suppose that
+		<span class="s2"></span> $x[i] = y[j]$.
+		<span class="s3"></span> If <span class="s2"></span> $i = 1 \lor j = 1$,<span class="s3"></span>then<span class="s2"></span> $\mathrm{lcs}(i,j) = x[i]$. <br>
+		Otherwise,<span class="s2"></span> $\mathrm{lcs}(i,j) =
+		\mathrm{lcs}(i\!-\!1,j\!-\!1) * x[i]$ .
 		<details>
 		<summary>Proof</summary>
-			Suppose that $i > 1 \,\land\, j > 1 \,\land\, x[i]=y[j]$, otherwise it is trivial. Let $\ell :=
-			|\mathrm{lcs}(i,j)|$. We have $\ell \geq 1$ and $\mathrm{lcs}(i,j) = x[i\!-\!\ell\!+\!1 \,.\,.\, i]
-			= y[j\!-\!\ell\!+\!1 \,.\,.\, j]$. Now note: if $i\!-\!\ell \geq 1\, \land \,j\!-\!\ell \geq 1$, then $x[i\!-\!\ell]\neq
-			y[j\!-\!\ell]$.<br>In fact: if it were $x[i\!-\!\ell]=y[j\!-\!\ell]$, then the maximality of $\mathrm{lcs}(i,j)$
-			would be contradicted.<br>We distinguish two cases:
+			Suppose that <span class="s2"></span>$i > 1 \,\land\, j > 1 \,\land\, x[i]=y[j]$,<span class="s2"></span> otherwise it is trivial.
+			<span class="s3"></span>Let $\ell := |\mathrm{lcs}(i,j)|$. <span class="s3"></span>We have
+			<span class="s2"></span>$\ell \geq 1$ <span class="s2"></span>and<span class="s2"></span>
+			$\mathrm{lcs}(i,j) = x[i\!-\!\ell\!+\!1 \,.\,.\, i]
+			= y[j\!-\!\ell\!+\!1 \,.\,.\, j]$.<span class="s3"></span> Before continuing, we make an important
+			observation: if <span class="s2"></span>$i\!-\!\ell \geq 1\, \land \,j\!-\!\ell \geq 1$,
+			then <span class="s2"></span>$x[i\!-\!\ell]\neq y[j\!-\!\ell]$.<span class="s2"></span> In fact, if it were<span class="s2"></span> $x[i\!-\!\ell]=y[j\!-\!\ell]$,
+			<span class="s2"></span>then we would have <span class="s2"></span>$\mathrm{lcs}(i,j) \neq x[i\!-\!\ell\!+\!1 \,.\,.\, i]$.<span class="s3"></span> We continue by distinguishing two cases:
 			<ul>
-				<li>Suppose $\ell=1$. Since $i > 1 \,\land\, j > 1$, we have $i\!-\!\ell \geq 1 \,\land\, j\!-\!\ell \geq 1$. So,
-				$\mathrm{lcs}(i\!-\!1,j\!-\!1) = \varepsilon$ and $\mathrm{lcs}(i,j) = x[i]$. Consequently,
-				$\mathrm{lcs}(i,j) = \mathrm{lcs}(i\!-\!1,j\!-\!1) * x[i]$ holds.</li>
-				<li>Suppose $\ell > 1$. Regardless of whether $i\!-\!\ell \geq 1 \,\land\, j\!-\!\ell \geq 1$ is true or not,
-				we have
-				$\mathrm{lcs}(i\!-\!1,j\!-\!1) = x[i\!-\!\ell\!+\!1 \,.\,.\, i\!-\!1]$. Since $\mathrm{lcs}(i,j) =
-				x[i\!-\!\ell\!+\!1 \,.\,.\, i] = x[i\!-\!\ell\!+\!1 \,.\,.\, i\!-\!1] * x[i]$, we conclude that
-				$\mathrm{lcs}(i,j) = \mathrm{lcs}(i\!-\!1,j\!-\!1) * x[i]$ holds.
+				<li>Suppose<span class="s2"></span> $\ell=1$.<span class="s3"></span> Since<span class="s2"></span> $i > 1 \,\land\, j > 1$,
+				<span class="s2"></span>we have <span class="s2"></span>$i\!-\!\ell \geq 1 \,\land\, j\!-\!\ell \geq 1$.<span class="s3"></span> So, <span class="s2"></span>
+				$\mathrm{lcs}(i\!-\!1,j\!-\!1) = \varepsilon$ <span class="s2"></span>and<span class="s2"></span> $\mathrm{lcs}(i,j) = x[i]$.
+				<span class="s3"></span>Consequently,<span class="s2"></span> 
+				$\mathrm{lcs}(i,j) = \mathrm{lcs}(i\!-\!1,j\!-\!1) * x[i]$<span class="s2"></span> holds.</li>
+				<li>Suppose<span class="s2"></span> $\ell > 1$.<span class="s3"></span> As we know, <span class="s2"></span>
+				$x[i\!-\!\ell\!+\!1 \,.\,.\, i\!-\!1]$<span class="s2"></span> equals<span class="s2"></span> $y[j\!-\!\ell\!+\!1 \,.\,.\, j\!-\!1]$.
+				<span class="s3"></span>So, regardless of whether<span class="s2"></span> $i\!-\!\ell \geq 1 \,\land\, j\!-\!\ell \geq 1$<span class="s2"></span> is true or not,
+				we have<span class="s2"></span> $\mathrm{lcs}(i\!-\!1,j\!-\!1) = x[i\!-\!\ell\!+\!1 \,.\,.\, i\!-\!1]$.<span class="s3"></span>
+				Since<span class="s2"></span> $\mathrm{lcs}(i,j) =
+				x[i\!-\!\ell\!+\!1 \,.\,.\, i] = x[i\!-\!\ell\!+\!1 \,.\,.\, i\!-\!1] * x[i]$,<span class="s2"></span> we conclude that
+				<span class="s2"></span> $\mathrm{lcs}(i,j) = \mathrm{lcs}(i\!-\!1,j\!-\!1) * x[i]$<span class="s2"></span> holds.
 				</li>
 			</ul>
 		</details>
 	</div>
 </div>
-This yields the following algorithm:
+These observations let us obtain our first algorithm:
 <pre><code class="language-python">def lcs_ij(x, y, i, j):
 	if x[i] != y[j]: return ""
 	if i == 0 or j == 0: return x[i]
@@ -276,19 +320,28 @@ def lcs(x, y):
 				ans = cur
 	return ans
 </code></pre>
-It requires $O(n \cdot m \cdot \min(n,m))$ time and $O(\min(n,m))$ space. We can reduce the latter to $O(1)$.
-It is sufficient to adapt <a href="#insight-3" class="insight-num">3</a> for computing $|\mathrm{lcs}(i,j)|$,
-and to observe:
+It requires $O(n \cdot m \cdot \min^2(n,m))$ time and $O(\min(n,m))$ space. <span class="s2"></span>If the repeated concatenations inside
+$\mathsf{lcs}\_\mathsf{ij}$ were to be removed, then the (worst case) time complexity would be $O(n \cdot m \cdot \min(n,m))$.
+<span class="s2"></span>While we could remove them by optimizing $\mathsf{lcs}\_\mathsf{ij}$, we can do better.<span class="s2"></span> Observe:
 <div class="insight" id="insight-4">
 	<a href="#insight-4" class="insight-num insight-label">4</a>
 	<div class="insight-content">
-		Let $(p,q) \in I$ and $\ell := |\mathrm{lcs}(p,q)|$. Suppose that $\ell \geq |\mathrm{lcs}(i,j)|$
-		for all $(i,j) \in I$. By <a href="#insight-2" class="insight-num">2</a>, we have $\mathrm{lcs}(p,q)
-		\in \mathrm{LCS}$. The sequence $\mathrm{lcs}(p,q)$ ends at position $p$ of $x$ and has length $\ell$,
-		so $x[p\!-\!\ell\!+\!1 \,.\,.\, p] \in \mathrm{LCS}$.
+		Let <span class="s2"></span>$(i,j) \in I$ <span class="s2"></span>and <span class="s2"></span>$\ell := |\mathrm{lcs}(i,j)|$ .<span class="s3"></span>If<span class="s2"></span> $\ell \geq |\mathrm{lcs}(i',j')|$<span class="s2"></span> for all<span class="s2"></span> $(i',j') \in I$,
+		<span class="s2"></span> then <span class="s2"></span>$x[i\!-\!\ell\!+\!1 \,.\,.\, i] \in \mathrm{LCS}$ .
+		<details>
+		<summary>Proof</summary>
+		If <span class="s2"></span>$\ell$<span class="s2"></span> satisfies the above hypothesis, then by 
+		<span class="s2"></span><a href="#insight-2" class="insight-num">2</a> we have <span class="s2"></span>$\mathrm{lcs}(i,j)
+		\in \mathrm{LCS}$ . <span class="s3"></span>The sequence $\mathrm{lcs}(i,j)$ ends at position $i$ of $x$ and has length $\ell$,
+		<span class="s2"></span>so $x[i\!-\!\ell\!+\!1 \,.\,.\, i] \in \mathrm{LCS}$ .
+		</details>
 	</div>
 </div>
-The above algorithm becomes:
+So, for each $(i,j) \in I$, it is sufficient to calculate $|\mathrm{lcs}(i,j)|$ instead of $\mathrm{lcs}(i,j)$.
+<span class="s2"></span>We can do that by adapting <a href="#insight-3" class="insight-num">3</a><span class="s2"></span>. <span class="s2"></span>We said this was better.
+<span class="s2"></span>Why? <span class="s2"></span>Because
+the time complexity still becomes $O(n \cdot m \cdot \min(n,m))$, but we also achieve $O(1)$ space and (arguably) a cleaner 
+algorithm.<span class="s2"></span> Here is the adapted code:
 <pre><code class="language-python">def len_lcs_ij(x, y, i, j):
 	if x[i] != y[j]: return 0
 	if i == 0 or j == 0: return 1
@@ -307,31 +360,35 @@ def lcs(x, y):
 				l = cur_l
 	return x[p-l+1 : p+1] if l > 0 else ""
 </code></pre>
-For clarity, we stored the entire pair $(p,q)$ instead of just $p$. Later, we will drop the second coordinate.
+I named "$(p,q)$" the pair for tracking the solution, instead of "$(i,j)$" as <a href="#insight-4" class="insight-num">4</a>
+would suggest; this is because it reads better to use $i$ and $j$ for the loops, since python does not allow "$i'$" as a variable name.
+<span class="s2"></span>For clarity,
+I stored the entire pair $(p,q)$ instead of just $p$.<span class="s3"></span>Later, I will drop the second coordinate.
 
 
 <h3 class="title_low_margin title_high_margin">Dynamic Programming</h3>
-Without loss of generality, suppose $n \geq m$ (for the rest of the page). At the expense of $\Theta(m)$ space,
-the time complexity can be reduced to $\Theta(nm)$. Observe:
+For the remaining explanations, but not in code, we assume that<span class="s2"></span> $n \geq m$. <span class="s2"></span> 
+Reason: clarity. 
+<span class="s2"></span>At the expense of $\Theta(m)$ space, we can reduce the time complexity to $\Theta(nm)$. Observe:
 <div class="insight" id="insight-5">
 	<a href="#insight-5" class="insight-num insight-label">5</a>
 	<div class="insight-content">
-		Let $(i,j) \in I$ with $i > 1 \, \land \, j > 1$. Our approach involves computing both
-		$|\mathrm{lcs}(i\!-\!1,j\!-\!1)|$
-		and $|\mathrm{lcs}(i,j)|$. However, if $x[i] = y[j]$, then the latter depends on the former (recall
-		<a href="#insight-3" class="insight-num">3</a>). Thus, if we compute and store
-		$|\mathrm{lcs}(i\!-\!1,j\!-\!1)|$ before
-		$|\mathrm{lcs}(i,j)|$, then the latter can be obtained in constant time, avoiding redundant calculations.
+		Let <span class="s2"></span>$(i,j) \in I$<span class="s2"></span> with<span class="s2"></span> $i > 1 \, \land \, j > 1$
+		.<span class="s3"></span>Our approach involves computing both <span class="s2"></span>$|\mathrm{lcs}(i\!-\!1,j\!-\!1)|$<span class="s2"></span>
+		and<span class="s2"></span> $|\mathrm{lcs}(i,j)|$ .<span class="s3"></span> However, <span class="s2"></span>if<span class="s2"></span> $x[i] = y[j]$,
+		<span class="s2"></span>then the latter depends on the former (recall <span class="s2"></span>
+		<a href="#insight-3" class="insight-num">3</a>).<span class="s3"></span>So, if we compute and store
+		<span class="s2"></span> $|\mathrm{lcs}(i\!-\!1,j\!-\!1)|$ <span class="s2"></span>before <span class="s2"></span>
+		$|\mathrm{lcs}(i,j)|$,<span class="s2"></span> then we can compute <span class="s2"></span> $|\mathrm{lcs}(i,j)|$ <span class="s2"></span> in constant time.
 	</div>
 </div>
-In short, <a href="#insight-3" class="insight-num">3</a> uncovers dynamic programming as a natural framework to improve
-the time complexity. To employ <a href="#insight-5" class="insight-num">5</a>, we introduce an auxiliary array
-$\mathsf{row}$ of length $m$. Then, we iterate over $I$ as follows: for each $i \in \{1,\,\ldots,\,n\}$,
-traverse the indices $j \in \{1,\,\ldots,\,m\}$ in reverse order. In fact, suppose that the algorithm has just begun the
-$i$-th iteration of its outer loop, with $i > 1$. Thus, suppose that for all $j \in \{1,\,\ldots,\,m\}$ we have
-$\mathsf{row}[j] = |\mathrm{lcs}(i\!-\!1,j)|$. When the algorithm considers an element $j \in \{2,\,\ldots,\,m\}$,
-it has $|\mathrm{lcs}(i\!-\!1,j\!-\!1)|$ stored in $\mathsf{row}[j\!-\!1] $. Consequently, it can compute and assign
-$|\mathrm{lcs}(i,j)|$ to $\mathsf{row}[j]$ in $O(1)$ time. This yields the following algorithm:
+To employ <a href="#insight-5" class="insight-num">5</a><span class="s2"></span>, we introduce an auxiliary array
+$\mathsf{row}$ of length $m$; moreover, we reverse the iteration order of the inner loop (that is, we scan $(1,\,\ldots,\,m)$ right to left).
+During the first iteration of the outer loop, for each $j \in \{1,\,\ldots,\,m\}$ we store $|\mathrm{lcs}(1,j)|$ in $\mathsf{row}[j]$.
+<span class="s2"></span> Let $i \in \{2,\,\ldots,\,n\}$, and consider the start of the $i$-th iteration of the outer loop. Suppose that, at this point,
+for each $j \in \{1,\,\ldots,\,m\}$ we have $\mathsf{row}[j] = |\mathrm{lcs}(i\!-\!1,j)|$.<span class="s2"></span> Let $j \in \{2,\,\ldots,\,m\}$.
+Because we scan $(1,\,\ldots,\,m)$ right to left, if we need $|\mathrm{lcs}(i\!-\!1,j\!-\!1)|$, then we can find it in $\mathsf{row}[j\!-\!1]$. <span class="s2"></span>So, the value
+$|\mathrm{lcs}(i,j)|$, which we store in $\mathsf{row}[j]$, can be computed in $O(1)$ time.<span class="s2"></span> Here is the new version:
 <pre><code class="language-python">def lcs(x, y):
 	if len(y) > len(x): x,y = y,x
 	n = len(x) ; m = len(y)
@@ -348,83 +405,92 @@ $|\mathrm{lcs}(i,j)|$ to $\mathsf{row}[j]$ in $O(1)$ time. This yields the follo
 				l = row[j]
 	return x[p-l+1 : p+1] if l > 0 else ""
 </code></pre>
-To be fair, this is not <i>exactly</i> the usual DP algorithm. Here, we use a single support array (not a table, not two
-arrays), and we iterate through $\{1,\,\ldots,\,m\}$ in reverse order (i had to say it).
+Note: this algorithm is <i>very similar</i> to one that is frequently found on the internet.
 
 <h3 class="title_low_margin title_high_margin">Sparse Dynamic Programming</h3>
-We now reduce the time complexity to $\Theta(n + m + \#(x,y))$, albeit in expected and amortized terms,
-while still requiring $\Theta(m)$ space. Recall that $\#(x,y)$ is the number of pairs $(i,j) \in I$ such that $x[i]=y[j]$.
+We now reduce the time complexity to $\Theta(n + m + \#(x,y))$, even though in expected and amortized terms,
+while still requiring $\Theta(m)$ space.<span class="s2"></span> Recall that $\#(x,y)$ is the number of pairs $(i,j) \in I$ such that $x[i]=y[j]$.
 <br>The following observation exposes a key inefficiency of the dynamic programming algorithm:
 <div class="insight" id="insight-6">
 	<a href="#insight-6" class="insight-num insight-label">6</a>
 	<div class="insight-content">
-		Let $i \in \{1,\,\ldots,\,n\}$. At the start of the $i$-th iteration of the outer-loop, the variable $l$
-		contains a value not smaller than $0$. Thus, for each $j \in \{1,\,\ldots,\,m\}$ such that $|\mathrm{lcs}(i,j)|
-		= 0$, the control $\mathsf{row}[j] > l$ is guaranteed to fail.
+		Let $i \in \{1,\,\ldots,\,n\}$. <span class="s2"></span>At the start of the $i$-th iteration of the outer loop,
+		the variable <span class="s2"></span>$l$<span class="s2"></span>
+		contains a value not smaller than $0$.<span class="s2"></span> Thus, for each<span class="s2"></span> $j \in \{1,\,\ldots,\,m\}$
+		<span class="s2"></span>such that <span class="s2"></span>$|\mathrm{lcs}(i,j)|
+		= 0$,<span class="s2"></span> the control <span class="s2"></span>$\mathsf{row}[j] > l$<span class="s2"></span> is guaranteed to fail.
 	</div>
 </div>
-That is, each pair $(i,j) \in I$ such that $x[i] \neq y[j]$ is irrelevant to improving the current best solution.
-However, due to the decomposition outlined in <a href="#insight-3" class="insight-num">3</a>, it might be useful
-to know whether $(i,j)$ is such that $|\mathrm{lcs}(i,j)| = 0$. In order to (implicitly) store this information,
-we augment $\mathsf{row}$:
+That is, each pair $(i,j) \in I$ such that $x[i] \neq y[j]$ is irrelevant to improving the current best solution.<br>
+So, we skip them. To this end:
 <div class="insight" id="insight-7">
 	<a href="#insight-7" class="insight-num insight-label">7</a>
 	<div class="insight-content">
-	We modify each element of $\mathsf{row}$
-	to contain two fields: $\mathsf{len}$ and $\mathsf{upd}$. During the initialization phase, we set to $-1$ the
-	$\mathsf{upd}$ field of each element. Then, for each $(i,j) \in I$, we manipulate $\mathsf{row}[j]$ as follows.
-	If $x[i] \neq y[j]$, then we do not alter $\mathsf{row}[j]$. Otherwise, we assign $|\mathrm{lcs}(i,j)|$ to
-	$\mathsf{row}[j]\mathsf{.len}$, and $i$ to $\mathsf{row}[j]\mathsf{.upd}$.
-		<details>
-		<summary>Why it works ?</summary>
-		Let $(i,j) \in I$ be such that $x[i] = y[j]$. We can still compute $|\mathrm{lcs}(i,j)|$ in $O(1)$ time.
-		In fact, suppose that $i>1 \,\land\, j>1$ (otherwise, it is trivial), and recall the specified iteration order.
-		It suffices to check the value contained in $\mathsf{row}[j\!-\!1]\mathsf{.upd}$. We have two cases:
-		<ul>
-			<li>Suppose $\mathsf{row}[j\!-\!1]\mathsf{.upd} \neq i\!-\!1$. Then, $x[i\!-\!1] = y[j\!-\!1]$ cannot be true.
-			Thus, we have $|\mathrm{lcs}(i\!-\!1,j\!-\!1)| = 0$.
-			</li>
-			<li>Suppose $\mathsf{row}[j\!-\!1]\mathsf{.upd} = i\!-\!1$. By contradiction, suppose that
-			$x[i\!-\!1] \neq y[j\!-\!1]$ holds. When processing the pair $(i\!-\!1,j\!-\!1)$, the algorithm cannot
-			have modified
-			$\mathsf{row}[j\!-\!1]$. If no prior outer-loop iteration had modified $\mathsf{row}[j\!-\!1].\mathsf{upd}$,
-			then now it would contain $-1$ (due to the initialization phase). This cannot have happened, since $i\!-\!1$ is
-			at least $0$. Suppose that there existed an outer-loop iteration during which
-			$\mathsf{row}[j\!-\!1].\mathsf{upd}$ had been modified. Let $i'$ identify the latest of those iterations.
-			Currently, $\mathsf{row}[j\!-\!1].\mathsf{upd}$ would contain $i'$. However, $i'$ necessarily belongs to
-			$\{1,\,\ldots,\,i-2\}$. Thus, $\mathsf{row}[j\!-\!1]\mathsf{.upd} = i\!-\!1$ would be contradicted. Consequently,
-			$x[i\!-\!1] \neq y[j\!-\!1]$ must be false. This implies that $\mathsf{row}[j\!-\!1]\mathsf{.len}$ contains
-			$|\mathrm{lcs}(i\!-\!1,j\!-\!1)|$.
-			</li>
-		</ul>
-		</details>
+	During the initialization phase, we build a hash map mapping each symbol<span class="s2"></span> $\sigma$ 
+	<span class="s2"></span>of <span class="s2"></span>$y$<span class="s2"></span>
+	to the strictly increasing ordering of <span class="s2"></span>$\{j \in \{1,\,\ldots,\,m\} : y[j]=\sigma \}$ .
 	</div>
 </div>
-To complete our algorithm, we need a means to iterate only over the pairs $(i,j) \in I$ such that $x[i] = y[j]$.
-<br>For this reason:
+It can be built in $\Theta(m)$ expected amortized time, requires $\Theta(m)$ space, and might be replaceable by an array. <br>
+<div style="margin:0; padding:0; padding-bottom: 12px;"></div>
+Skipping the pairs $(i,j) \in I$ such that $x[i] \neq y[j]$ introduces an issue. To be clear, we are currently
+considering the DP algorithm with the hash map trick. <span class="s3"></span> Let <span class="s2"></span>$(i,j) \in I$<span class="s2"></span> be such that <span class="s2"></span>$i > 1 \,\land\, j > 1 \,\land\, x[i]=y[j]$.
+<span class="s3"></span>When it considers this pair, the algorithm relies on <span class="s2"></span>$\mathsf{row}[j\!-\!1]$<span class="s2"></span> to compute 
+$|\mathrm{lcs}(i,j)|$.<span class="s2"></span> If $x[i\!-\!1]=y[j\!-\!1]$, then 
+<span class="s2"></span>$\mathsf{row}[j\!-\!1]$<span class="s2"></span> was last modified
+during the<span class="s2"></span> $i\!-\!1$-th iteration of the outer loop; so, it currently contains $|\mathrm{lcs}(i\!-\!1,j\!-\!1)|$.
+<span class="s2"></span>However, if $x[i\!-\!1]\neq y[j\!-\!1]$, then either <span class="s2"></span>$\mathsf{row}[j\!-\!1]$<span class="s2"></span>
+was never modified after its initialization, or it was last modified during the $i'$-iteration of the outer loop, for some $i' \in \{1,\,\ldots,\,i\!-\!2\}$.
+<span class="s2"></span> In the second case, it currently contains <span class="s2"></span>$|\mathrm{lcs}(i',j\!-\!1)|$, which is bigger than $0$.<span class="s2"></span> 
+Since <span class="s2"></span>$|\mathrm{lcs}(i\!-\!1,j\!-\!1)| = 0$, <span class="s2"></span> relying on <span class="s2"></span>$\mathsf{row}[j\!-\!1]$
+<span class="s2"></span> to compute <span class="s2"></span>$|\mathrm{lcs}(i,j)|$ <span class="s2"></span> would be wrong.<br>
+We solve this issue by storing the last position at which <span class="s2"></span>$\mathsf{row}[j\!-\!1]$<span class="s2"></span> was modified:
 <div class="insight" id="insight-8">
 	<a href="#insight-8" class="insight-num insight-label">8</a>
 	<div class="insight-content">
-	During the initialization phase, we construct a hash map mapping each symbol $\sigma$ of $y$
-	to the strictly increasing ordering of $\{j \in \{1,\,\ldots,\,m\} : y[j]=\sigma \}$.
+	We augment each element of $\mathsf{row}$
+	to contain two fields: $\mathsf{len}$ and $\mathsf{upd}$. <span class="s2"></span>During the initialization phase, we set to $-1$<span class="s2"></span> the
+	<span class="s2"></span>$\mathsf{upd}$<span class="s2"></span> field of each element.<span class="s2"></span> Then, for each $(i,j) \in I$
+	such that $x[i]=y[j]$, we assign <span class="s2"></span>$|\mathrm{lcs}(i,j)|$ <span class="s2"></span>to <span class="s2"></span>$\mathsf{row}[j]\mathsf{.len}$,
+	<span class="s2"></span>and<span class="s2"></span> $i$ <span class="s2"></span>to<span class="s2"></span> $\mathsf{row}[j]\mathsf{.upd}$<span class="s2"></span>.
 	</div>
 </div>
-The hash map can be constructed in $\Theta(m)$ expected amortized time, while requiring $\Theta(m)$ space.
-Moreover, it might be replaceable by an array. We finally obtain our sparse DP algorithm (we renamed $\mathsf{len}$
-with $\mathsf{length}$):
+Let's see why this works.<span class="s2"></span> Consider a pair $(i,j) \in I$ such that <span class="s2"></span>$i > 1 \,\land\, j > 1 \,\land\, x[i]=y[j]$.<span class="s2"></span>
+In order to compute $|\mathrm{lcs}(i,j)|$, <span class="s2"></span>
+it is sufficient to check $\mathsf{row}[j\!-\!1]\mathsf{.upd}$:
+<ul>
+	<li>Suppose that <span class="s2"></span>$\mathsf{row}[j\!-\!1]\mathsf{.upd} \neq i\!-\!1$ .<br>
+		If $x[i\!-\!1] = y[j\!-\!1]$ were true, then <span class="s2"></span>$\mathsf{row}[j\!-\!1]\mathsf{.upd}$
+		<span class="s2"></span>would contain $i\!-\!1$.
+		<span class="s2"></span>So, we find that <span class="s2"></span>$|\mathrm{lcs}(i\!-\!1,j\!-\!1)| = 0$ .
+	</li>
+	<li>Suppose that $\mathsf{row}[j\!-\!1]\mathsf{.upd} = i\!-\!1$ .<br>
+		By contradiction, suppose that $x[i\!-\!1] \neq y[j\!-\!1]$ holds. The algorithm cannot have considered the pair
+		$(i\!-\!1,j\!-\!1)$, so $\mathsf{row}[j\!-\!1]$ was not modified during the <span class="s2"></span>$i\!-\!1$-th iteration of the outer loop.
+		If no prior iteration had modified $\mathsf{row}[j\!-\!1].\mathsf{upd}$, then now it would contain $-1$.<span class="s2"></span> This cannot have
+		happened, since <span class="s2"></span>$i\!-\!1 \geq 0$.<span class="s2"></span> So, it must have been modified during a prior outer loop iteration.
+		Let $i'$ identify the latest such iteration. <span class="s2"></span>During the $i'$-th iteration, $\mathsf{row}[j\!-\!1].\mathsf{upd}$ has been set to $i'$.
+		So, now it contains $i'$. However, <span class="s2"></span>$i'$ <span class="s2"></span>necessarily belongs to<span class="s2"></span>
+		$\{1,\,\ldots,\,i\!-\!2\}$. This contradicts the hypothesis <span class="s2"></span> $\mathsf{row}[j\!-\!1]\mathsf{.upd} = i\!-\!1$.
+		<span class="s2"></span> Consequently, we establish that <span class="s2"></span>  $x[i\!-\!1] = y[j\!-\!1]$ is true.
+		<span class="s2"></span> This implies that $\mathsf{row}[j\!-\!1]\mathsf{.len}$ contains <span class="s2"></span>
+		$|\mathrm{lcs}(i\!-\!1,j\!-\!1)|$.
+		</li>
+</ul>
+We finally obtain our sparse DP algorithm (I renamed $\mathsf{len}$ with $\mathsf{length}$):
 <pre><code class="language-python">from dataclasses import dataclass
 
 @dataclass
 class Cell:
-    length: int
-    upd: int
+	length: int
+	upd: int
 
 def build_map(s):
-    d = dict()
-    for i,c in enumerate(s):
-        if c not in d: d[c] = []
-        d[c].append(i)
-    return d
+	d = dict()
+	for i,c in enumerate(s):
+		if c not in d: d[c] = []
+		d[c].append(i)
+	return d
 
 def lcs(x, y):
 	if len(y) > len(x): x,y = y,x
@@ -446,26 +512,28 @@ def lcs(x, y):
     return x[p-l+1 : p+1] if l > 0 else ""
 </code></pre>
 
-<h3 class="title_low_margin title_high_margin">Even Further Beyond (!)</h3>
+<h3 class="title_low_margin title_high_margin">Even Further Beyond !</h3>
 <p>
-Let $k \in \{1,\,\ldots,\,\min(n,m)\}$. As an attempt to "increase sparsity",
-we can run our algorithm on the sequences $x^{(k)} := (x[1 \,.\,.\, k],\, x[2 \,.\,.\, k\!+\!1],\, \ldots,\,
-x[n\!-\!k\!+\!1 \,.\,.\, n])$
-and $y^{(k)} := (y[1 \,.\,.\, k],\, y[2 \,.\,.\, k\!+\!1],\, \ldots,\, y[m\!-\!k\!+\!1 \,.\,.\, m])$.<br>
-This optimization requires almost no modification to the code, and is discussed in detail in the
+I hope you got the quote.<span class="s2"></span> 
+Let $k \in \{1,\,\ldots,\,\min(n,m)\}$. <span class="s2"></span> As an attempt to "increase sparsity",
+we can run our algorithm on the sequences $x^{(k)}$ and $y^{(k)}$, defined as:
+$$x^{(k)} \quad := \quad (x[1 \,.\,.\, k],\,\, x[2 \,.\,.\, k\!+\!1],\,\, \ldots,\,\,
+x[n\!-\!k\!+\!1 \,.\,.\, n])$$
+$$y^{(k)} \quad := \quad (y[1 \,.\,.\, k],\,\, y[2 \,.\,.\, k\!+\!1],\,\, \ldots,\,\, y[m\!-\!k\!+\!1 \,.\,.\, m])$$
+This optimization requires almost no modification to the code. Its correctness is discussed in the
 <a href="https://doi.org/10.5281/zenodo.18817204">preprint</a>.
 </p>
 <p>
 If there exists $s \in \mathrm{CS}$ such that $|s| \geq k$, then the time complexity becomes
-$\Theta(k(n+m-k) + \#(x^{(k)},y^{(k)}))$, while the space complexity becomes $\Theta(k(n+m-k))$.
+$\Theta(k(n+m-k) + \#(x^{(k)},y^{(k)}))$, while the space complexity becomes $\Theta(k(n+m-k))$.<span class="s2"></span>
 In this case, bit-packing (if feasible) allows to further reduce complexities: they become
-$\Theta(n+m-k + \#(x^{(k)},y^{(k)}))$ and $\Theta(n+m-k)$, respectively. Both time complexities are still
+$\Theta(n+m-k + \#(x^{(k)},y^{(k)}))$ and $\Theta(n+m-k)$, respectively. <span class="s2"></span>Both time complexities are still
 expressed in expected and amortized terms.
 </p>
 <p>
 Otherwise, if no suitable $s \in \mathrm{CS}$ exists, then our sparse DP
 won't find a solution. So, we will need to search one by considering the interval of lengths $[0,k\!-\!1]$. To this end,
-we can use linear search (or something better).
+we can use linear search (or something faster).
 </p>
 </body>
 </html>
