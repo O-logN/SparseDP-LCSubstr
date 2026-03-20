@@ -157,23 +157,29 @@ This is NOT the longest common subsequence problem. Sometimes, people confuse th
 
 <h3 class="title_low_margin title_high_margin">Introduction</h3>
 <p>
-Let $x$ and $y$ be two strings, of length $n$ and $m$ respectively.<span class="s2"></span> Let $\#(x,y)$ be the number
+Let $x$ and $y$ be two strings, of length $n$ and $m$ respectively.<span class="s2"></span> Let 
+<span class="s2"></span>$\#(x,y)$<span class="s2"></span> be the number
 of pairs <span class="s2"></span>
 $(i,j) \in \{1,\,\ldots,\,n\}\!\times\!\{1,\,\ldots,\,m\}$ <span class="s2"></span> such that<span class="s2"></span> $x[i]=y[j]$.
-<span class="s2"></span> In this page, i present a sparse Dynamic Programming (DP) algorithm requiring $\Theta(n+m+\#(x,y))$ time <sup>[1]</sup>
-and $\Theta(\min(n,m))$ space. Goals: writing an educational resource, and proving that this algorithm is conceptually simple.
-I follow this roadmap: starting from basic intuitions, i obtain a brute force algorithm. I improve it, and then I further 
-enhance it through DP. This produces a $\Theta(nm)$ algorithm that appears frequently on the internet. Then, i turn it into my
-sparse DP algorithm. At the end of the page, I mention how to further improve its time complexity (two tricks that don't ruin
-its simplicity). A complete explanation is available in my <a href="https://doi.org/10.5281/zenodo.18817204">preprint</a>.
-<br> <div style="margin:0; padding:0; padding-bottom: 9px;"></div>
-In the <a href="https://github.com/O-logN/SparseDP-LCSubstr/">github repo</a>, you can
-find python code and a very limited benchmark against a suffix tree. While that result is encouraging, I lack the domain
-knowledge to conduct meaningful benchmarks in relevant scenarios.<br> So, contributions would be welcome.
-</p> 
+<span class="s2"></span> In this page, I present a sparse Dynamic Programming (DP) algorithm that I have developed.
+It requires $\Theta(n+m+\#(x,y))$ time <sup>[1]</sup> and $\Theta(\min(n,m))$ space.<span class="s2"></span>
+Two optimizations, discussed in more detail at the end of the page, (may) allow to further improve its speed.
+</p>
+<p>
+In the <a href="https://github.com/O-logN/SparseDP-LCSubstr/">github repo</a> you can find
+a (very limited) benchmark against a suffix tree.
+<br>While that result is encouraging, I lack the domain
+knowledge to conduct meaningful benchmarks in relevant scenarios. So, contributions would be welcome.
+</p>
+<p>
+A defining feature for this algorithm is its conceptual simplicity. So, I wrote this page also to provide an educational
+resource. In particular, i follow the roadmap: Brute Force -> Dynamic Programming -> Sparse DP.<br>
+Check the <a href="https://doi.org/10.5281/zenodo.18817204">preprint</a> for a more complete explanation.
+</p>
 
 <p> <small>[1] To be precise, $\Theta(n+m+\#(x,y))$ expected amortized time.<br>"Expected" due
-to hash map lookups/insertions, "amortized" due to array appends.</small> </p>
+to hash map lookups/insertions, "amortized" due to array appends.<br>
+This also holds for the other time complexities in the Introduction.</small> </p>
 
 <h3 class="title_low_margin title_high_margin">Contact</h3>
 <p>
