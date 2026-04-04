@@ -153,22 +153,31 @@ ol {
 </h2>
 
 <h3 class="title_low_margin title_high_margin">Premise</h3>
-This is NOT the longest common subsequence problem. Sometimes, people confuse the two.
+This is NOT the Longest Common Subsequence problem. Sometimes, people confuse the two. <br>
+In the Longest Common Substring problem, given two strings $x$ and $y$, we need to return
+a string $s$ such that:
+<ul>
+	<li>$s$ is a substring of both $x$ and $y$, i.e. a common substring;</li>
+	<li>for each common substring of $x$ and $y$, let it be $t$, we have that
+	$t$ is not longer than $s$.</li>
+</ul>
 
 <h3 class="title_low_margin title_high_margin">Introduction</h3>
 <p>
-Let $x$ and $y$ be two strings, of length $n$ and $m$ respectively.<span class="s2"></span> Let 
+Let $n$ and $m$ denote the length of the strings $x$ and $y$, respectively.
+<span class="s2"></span> Let 
 <span class="s2"></span>$\#(x,y)$<span class="s2"></span> be the number
 of pairs <span class="s2"></span>
 $(i,j) \in \{1,\,\ldots,\,n\}\!\times\!\{1,\,\ldots,\,m\}$ <span class="s2"></span> such that<span class="s2"></span> $x[i]=y[j]$.
-<span class="s2"></span> In this page, I present a sparse Dynamic Programming (DP) algorithm that I have developed.
+<span class="s2"></span> In this page, I present a sparse Dynamic Programming (DP) algorithm
+for Longest Common Substring, that I have developed.
 It requires $\Theta(n+m+\#(x,y))$ time <sup>[1]</sup> and $\Theta(\min(n,m))$ space.<span class="s2"></span>
 Two optimizations, discussed in more detail at the end of the page, (may) allow to further improve its speed.
 </p>
 <p>
 In the <a href="https://github.com/O-logN/SparseDP-LCSubstr/">github repo</a> you can find
-a (very limited) benchmark against a suffix tree.
-<br>While that result is encouraging, I lack the domain
+a benchmark against a suffix tree, which I ran in a i.i.d. model while using one of those optimizations.
+While that result is encouraging, I lack the domain
 knowledge to conduct meaningful benchmarks in relevant scenarios. So, contributions would be welcome.
 </p>
 <p>
@@ -179,7 +188,7 @@ Check the <a href="https://doi.org/10.5281/zenodo.18817204">preprint</a> for a m
 
 <p> <small>[1] To be precise, $\Theta(n+m+\#(x,y))$ expected amortized time.<br>"Expected" due
 to hash map lookups/insertions, "amortized" due to array appends.<br>
-This also holds for the other time complexities in the Introduction.</small> </p>
+This also holds for the other time complexities in the introduction.</small> </p>
 
 <h3 class="title_low_margin title_high_margin">Contact</h3>
 <p>
@@ -190,7 +199,7 @@ Email:
   const s = a + "tac" + "@" + b + "l.com";
   document.write('<a href="mailto:' + s + '">' + s + '</a>');
 </script>
-<noscript>Enable JS to see the address.</noscript>
+<noscript>Enable JS to see the email address.</noscript>
 </p>
 
 
@@ -232,7 +241,6 @@ For maths/presentation, we use $1$-based indexing. In code, we use $0$-based ind
 <p>
 Given $x$ and $y$, return an element of $\mathrm{LCS}$.
 </p>
-
 
 <h3 class="title_low_margin title_high_margin">Brute Force</h3>
 The following observation allows us to identify a search space.
